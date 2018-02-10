@@ -26,7 +26,9 @@ log_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
 log.addHandler(log_handler)
 log.setLevel(logging.DEBUG)
 
-
+# ------------------------------------------------------------------------------
+# Environment
+# ------------------------------------------------------------------------------
 class FixedGridWorldEnvironment:
     def __init__(self, size, initial_agent_position, exit_position, fixed_obstacles):
         # We need to track where the agent is, in order to calculate the next state from the taken action
@@ -81,7 +83,9 @@ class FixedGridWorldEnvironment:
             return 10
         return -1
 
-
+# ------------------------------------------------------------------------------
+# Agent
+# ------------------------------------------------------------------------------
 class Agent:
     def __init__(self, map_size, action_space_size):
         # Create a simple tabular policy which maps each state (position on the map) to a
@@ -107,7 +111,10 @@ class Agent:
         return np.random.choice(4)
 
 
-def render_environment(ar):
+# ------------------------------------------------------------------------------
+# Visuals
+# ------------------------------------------------------------------------------
+def render_environment_ascii(ar):
     """
     Show the environment on the console
     :param ar:
@@ -142,7 +149,7 @@ if __name__ == '__main__':
 
         for t in range(EPISODE_MAX_STEP_COUNT):
             log.debug('--- Step {:0>3} ---'.format(t))
-            render_environment(env.__env_array__)
+            render_environment_ascii(env.__env_array__)
 
             log.debug('Current state: {}'.format(state))
             action = agent.act(state)
@@ -161,7 +168,7 @@ if __name__ == '__main__':
 
             # Display the environment for debugging purposes
             env.update_agent_position(last_state, state)
-            render_environment(env.__env_array__)
+            render_environment_ascii(env.__env_array__)
 
             if state[0] == EXIT_POSITION[0] and state[1] == EXIT_POSITION[1]:
                 break

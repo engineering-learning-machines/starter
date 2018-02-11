@@ -9,9 +9,11 @@ import matplotlib.ticker as ticker
 # ------------------------------------------------------------------------------
 # Constants
 # ------------------------------------------------------------------------------
+SIMULATION_NAME = 'Simple Gridworld'
 MAP_SIZE = np.array((3, 4))
 SYMBOL_MAP = {'Empty': 0, 'Obstacle': 1, 'Exit': 2, 'Agent': 3}
 OBJECT_SYMBOLS = {0: '.', 1: '*', 2: 'x', 3: 'o'}
+OBJECT_COLORS = {0: 'white', 1: 'gray', 2: 'green', 3: 'red'}
 EPISODE_COUNT = 1
 EPISODE_MAX_STEP_COUNT = 1
 ACTION_NAMES = {0: 'move up', 1: 'move right', 2: 'move down', 3: 'move left'}
@@ -21,6 +23,8 @@ ACTION_VECTORS = np.array(((-1, 0), (0, 1), (1, 0), (0, -1)))
 EXIT_POSITION = np.array((2, 1))
 INITIAL_AGENT_POSITION = np.array((0, 0))
 FIXED_OBSTACLES = np.array(((2, 0), (1, 2), (1, 0)))
+# Visualization
+TILE_LINE_WIDTH=0.5
 # ------------------------------------------------------------------------------
 # Functions
 # ------------------------------------------------------------------------------
@@ -132,40 +136,94 @@ def render_environment_ascii(ar):
 
 
 class Renderer:
+    """
+    Notes: Tile size is always (width=1, height=1)
+    """
     def __init__(self, map_size, fig_width=8):
         self.fig_width = fig_width
         self.map_size = map_size
-        # verts = [
-        #        (2., 2.),  # left, bottom
-        #        (2., 3.),  # left, top
-        #        (3., 3.),  # right, top
-        #        (3., 2.),  # right, bottom
-        #        (2., 2.),  # ignored
-        #     ]
-        # codes = [
-        #         Path.MOVETO,
-        #         Path.LINETO,
-        #         Path.LINETO,
-        #         Path.LINETO,
-        #         Path.CLOSEPOLY,
-        #     ]
-        # path = Path(verts, codes)
-        # self.patch = patches.PathPatch(path, facecolor='white', lw=1)
+        # Scaling factor for the coordinate transform: tile coords -> text coords
+        scale = 1. / self.map_size
+        # Scale tile coordinates (environment array indices) to text coordinates (in the range [0,1])
+        self.text_coordinates_scale_transform = np.array([
+            [scale[0], 0],
+            [0, scale[1]]
+        ])
+        # Text coordinates need to be switched around, since text is plotted in the standard (x,y) coordiante space,
+        # with y=0 at the bottom of the plot.
+        self.coordinate_switch_transform = np.array([
+            [0, 1],
+            [1, 0]
+        ])
+        # Center the text on the tile center and reverse the y coordinate direction
+        self.text_coordinates_offset = np.array([0.5*scale[1], 0.5*scale[0]])
+
+    def tile_to_text_coords(self, row, column):
+        """
+        Transform the grid world coordinates to text coordinates, so we can show text. The text is centered in the tile.
+        :param row:
+        :param column:
+        :return:
+        """
+        grid_coords = np.array([self.map_size[0] - 1 - row, column])
+        scaled_coords = np.dot(self.text_coordinates_scale_transform, grid_coords)
+        return np.dot(self.coordinate_switch_transform, scaled_coords) + self.text_coordinates_offset
+
+    def draw_tile(self, ax, row, column, object_code, text=None):
+        verts = [
+           # left, bottom
+           (column, row+1),
+           # left, top
+           (column, row),
+           # right, top
+           (column+1, row),
+           # right, bottom
+           (column+1, row+1),
+           # close loop (left, bottom)
+           (column, row+1),
+        ]
+        codes = [
+            Path.MOVETO,
+            Path.LINETO,
+            Path.LINETO,
+            Path.LINETO,
+            Path.CLOSEPOLY,
+        ]
+        path = Path(verts, codes)
+        ax.add_patch(patches.PathPatch(path, facecolor='white', lw=TILE_LINE_WIDTH))
+        patch = patches.PathPatch(path, facecolor=OBJECT_COLORS[object_code], lw=TILE_LINE_WIDTH)
+        ax.add_patch(patch)
+
+        if text is not None:
+            coords = self.tile_to_text_coords(row, column)
+            ax.text(
+                coords[0],
+                coords[1],
+                text,
+                horizontalalignment='center',
+                verticalalignment='center',
+                fontsize=10,
+                color='black',
+                transform=ax.transAxes
+            )
 
     @staticmethod
     def configure_axis_ticks(axis, set_lim, size):
         axis.set_major_locator(ticker.NullLocator())
         axis.set_major_formatter(ticker.NullFormatter())
         axis.set_minor_locator(ticker.FixedLocator(0.5 + np.arange(size)))
-        axis.set_minor_formatter(ticker.StrMethodFormatter('{x:.0f}'))
+        axis.set_minor_formatter(ticker.FuncFormatter(lambda x, pos: '{}'.format(int(x-0.5))))
         set_lim(0, size)
 
     def render_matplotlib(self, ar):
-
-        # figsize=(width, height). With a fixed width of 10, scale the height
-        # according to the grid world ratio:
+        """
+        Renders the gridworld in Matplotlib
+        :param ar: The gridworld array
+        :return:
+        """
         fig_height = self.fig_width*float(self.map_size[0])/self.map_size[1]
         fig = plt.figure(figsize=(self.fig_width, fig_height))
+        fig.canvas.set_window_title(SIMULATION_NAME)
         ax = fig.add_subplot(111)
         ax.grid()
         # Configure ticks
@@ -174,24 +232,10 @@ class Renderer:
         ax.invert_yaxis()
         ax.xaxis.tick_top()
 
-        # for row in range(MAP_SIZE[0]):
-        #     str_row = ''
-        #     for column in range(MAP_SIZE[1]):
-        #         str_row += ' ' + OBJECT_SYMBOLS[ar[row, column]] + ' '
-        #     print(str_row)
-
-        # ax.text(
-        #     2.5*(1./8),
-        #     (8 - 2.5)*(1./8),
-        #     '0.35',
-        #     horizontalalignment='center',
-        #     verticalalignment='center',
-        #     fontsize=18,
-        #     color='red',
-        #     transform=ax.transAxes
-        # )
+        for row in range(self.map_size[0]):
+            for column in range(self.map_size[1]):
+                self.draw_tile(ax, row, column, ar[row, column], text='{0}{1}'.format(row, column))
         plt.show()
-
 
 # ------------------------------------------------------------------------------
 # Main

@@ -2,6 +2,10 @@
 import sys
 import numpy as np
 import logging
+import matplotlib.pyplot as plt
+from matplotlib.path import Path
+import matplotlib.patches as patches
+import matplotlib.ticker as ticker
 # ------------------------------------------------------------------------------
 # Constants
 # ------------------------------------------------------------------------------
@@ -9,7 +13,7 @@ MAP_SIZE = np.array((3, 4))
 SYMBOL_MAP = {'Empty': 0, 'Obstacle': 1, 'Exit': 2, 'Agent': 3}
 OBJECT_SYMBOLS = {0: '.', 1: '*', 2: 'x', 3: 'o'}
 EPISODE_COUNT = 1
-EPISODE_MAX_STEP_COUNT = 100
+EPISODE_MAX_STEP_COUNT = 1
 ACTION_NAMES = {0: 'move up', 1: 'move right', 2: 'move down', 3: 'move left'}
 # The actions can be conveniently represented as vectors when we calculate
 # the next state
@@ -126,6 +130,69 @@ def render_environment_ascii(ar):
             str_row += ' ' + OBJECT_SYMBOLS[ar[row, column]] + ' '
         print(str_row)
 
+
+class Renderer:
+    def __init__(self, map_size, fig_width=8):
+        self.fig_width = fig_width
+        self.map_size = map_size
+        # verts = [
+        #        (2., 2.),  # left, bottom
+        #        (2., 3.),  # left, top
+        #        (3., 3.),  # right, top
+        #        (3., 2.),  # right, bottom
+        #        (2., 2.),  # ignored
+        #     ]
+        # codes = [
+        #         Path.MOVETO,
+        #         Path.LINETO,
+        #         Path.LINETO,
+        #         Path.LINETO,
+        #         Path.CLOSEPOLY,
+        #     ]
+        # path = Path(verts, codes)
+        # self.patch = patches.PathPatch(path, facecolor='white', lw=1)
+
+    @staticmethod
+    def configure_axis_ticks(axis, set_lim, size):
+        axis.set_major_locator(ticker.NullLocator())
+        axis.set_major_formatter(ticker.NullFormatter())
+        axis.set_minor_locator(ticker.FixedLocator(0.5 + np.arange(size)))
+        axis.set_minor_formatter(ticker.StrMethodFormatter('{x:.0f}'))
+        set_lim(0, size)
+
+    def render_matplotlib(self, ar):
+
+        # figsize=(width, height). With a fixed width of 10, scale the height
+        # according to the grid world ratio:
+        fig_height = self.fig_width*float(self.map_size[0])/self.map_size[1]
+        fig = plt.figure(figsize=(self.fig_width, fig_height))
+        ax = fig.add_subplot(111)
+        ax.grid()
+        # Configure ticks
+        self.configure_axis_ticks(ax.xaxis, ax.set_xlim, self.map_size[1])
+        self.configure_axis_ticks(ax.yaxis, ax.set_ylim, self.map_size[0])
+        ax.invert_yaxis()
+        ax.xaxis.tick_top()
+
+        # for row in range(MAP_SIZE[0]):
+        #     str_row = ''
+        #     for column in range(MAP_SIZE[1]):
+        #         str_row += ' ' + OBJECT_SYMBOLS[ar[row, column]] + ' '
+        #     print(str_row)
+
+        # ax.text(
+        #     2.5*(1./8),
+        #     (8 - 2.5)*(1./8),
+        #     '0.35',
+        #     horizontalalignment='center',
+        #     verticalalignment='center',
+        #     fontsize=18,
+        #     color='red',
+        #     transform=ax.transAxes
+        # )
+        plt.show()
+
+
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -134,6 +201,9 @@ def render_environment_ascii(ar):
 if __name__ == '__main__':
 
     for episode_id in range(EPISODE_COUNT):
+
+        # Visualize the environment
+        renderer = Renderer(MAP_SIZE)
 
         # Make this deterministic
         np.random.seed(0)
@@ -150,6 +220,7 @@ if __name__ == '__main__':
         for t in range(EPISODE_MAX_STEP_COUNT):
             log.debug('--- Step {:0>3} ---'.format(t))
             render_environment_ascii(env.__env_array__)
+            renderer.render_matplotlib(env.__env_array__)
 
             log.debug('Current state: {}'.format(state))
             action = agent.act(state)

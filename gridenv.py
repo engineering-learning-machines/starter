@@ -10,7 +10,7 @@ import matplotlib.ticker as ticker
 # Constants
 # ------------------------------------------------------------------------------
 SIMULATION_NAME = 'Simple Gridworld'
-MAP_SIZE = np.array((3, 4))
+MAP_SIZE = np.array((5, 5))
 SYMBOL_MAP = {'Empty': 0, 'Obstacle': 1, 'Exit': 2, 'Agent': 3}
 OBJECT_SYMBOLS = {0: '.', 1: '*', 2: 'x', 3: 'o'}
 # OBJECT_COLORS = {0: 'white', 1: 'gray', 2: 'green', 3: 'red'}
@@ -26,9 +26,16 @@ ACTION_NAMES = {0: 'move up', 1: 'move right', 2: 'move down', 3: 'move left'}
 # The actions can be conveniently represented as vectors when we calculate
 # the next state
 ACTION_VECTORS = np.array(((-1, 0), (0, 1), (1, 0), (0, -1)))
-EXIT_POSITION = np.array((2, 1))
+# EXIT_POSITION = np.array((2, 1))
+EXIT_POSITION = np.array((4, 2))
 INITIAL_AGENT_POSITION = np.array((0, 0))
-FIXED_OBSTACLES = np.array(((2, 0), (1, 2), (1, 0)))
+FIXED_OBSTACLES = np.array([
+    (0, 4),
+    (1, 0),
+    (2, 0), (2, 1), (2, 3),
+    (3, 3),
+    (4, 1)
+])
 # Visualization
 TILE_LINE_WIDTH=0.5
 # ------------------------------------------------------------------------------

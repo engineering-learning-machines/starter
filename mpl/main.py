@@ -105,6 +105,36 @@ class Network:
             for neighbor_id, weight in self.forward_connections[n_id].items():
                 self.neurons[neighbor_id] += self.neurons[n_id] * weight
 
+    def backpropagate(self, label):
+        """
+        Note that the weight deltas should be cleaned up during the weight update!!! We rely on that here.
+        """
+        # The number of outputs *must match* the one-hot encoded label vector dimension
+        output_length = len(label)
+        reverse_sorted_order = list(reversed(self.sorted_order))
+        # We need to handle outputs separately. More code for labels with dim > 1?
+        # Here we use the index i just to fetch elements of label. The fixed order list guarantees that
+        # the output neuron values are always matched with their labels.
+        for i, n_id in enumerate(reverse_sorted_order[:output_length]):
+            output = self.neurons[n_id]
+            error = (label[i] - output) * output * (1. - output)
+            for incoming_neighbor_id in self.backward_connections[n_id].keys():
+                self.backward_connections[n_id][incoming_neighbor_id] = error * self.neurons[incoming_neighbor_id]
+
+        # Backpropagation rule for the rest of the neurons
+        for n_id in reverse_sorted_order[output_length+1:]:
+            output = self.neurons[n_id]
+            # Find the multiplicative derivative terms from previous steps
+            error_sum = sum([
+                self.backward_connections[outgoing_neighbor_id][n_id]
+                for outgoing_neighbor_id
+                in self.forward_connections[n_id].keys()
+            ])
+            error = output * (1 - output) * error_sum
+            # Multiply with the previous inputs in the chain to finalize the derivatives w.r.t. each incoming connection
+            for incoming_neighbor_id in self.backward_connections[n_id].keys():
+                self.backward_connections[n_id][incoming_neighbor_id] = error * self.neurons[incoming_neighbor_id]
+
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -133,9 +163,25 @@ if __name__ == '__main__':
         for output_id in output_neurons:
             net.connect(hidden_id, output_id, random())
 
-    x = [0.35, 0.31, 0.23, 0.21, 0.02]
-    net.evaluate(x)
-    print(net.neurons)
+    x = [
+        [0.35, 0.31, 0.23, 0.21, 0.02],
+        [0.25, -0.1, 0.20, 0.81, -1.02],
+        [0.83, 0.21, 0.8, -1.21, 3.02]
+    ]
+    l = [
+        [0, 0],
+        [0, 1],
+        [1, 0]
+    ]
+    # net.evaluate(x)
+    # print(net.neurons)
+    # Labels should be one-hot encoded. For only one output the value is either 0 or 1
+    # label = [1]
+    # net.backpropagate(label)
+
+    for i in range(len(x)):
+        net.evaluate(x[i])
+        net.backpropagate(l[i])
 
 
 

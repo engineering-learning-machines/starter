@@ -1,15 +1,23 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 from random import random
 from math import exp
 import pickle
+import time
+import logging
+import sys
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
-INPUT_NEURONS = 5
-HIDDEN_NEURONS = 3
-OUTPUT_NEURONS = 2
+INPUT_NEURONS = 768
+HIDDEN_NEURONS = 50
+OUTPUT_NEURONS = 10
 DATA_FILE = '/Users/g6714/Data/amazonaws/mnist.pkl'
 
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+log.addHandler(handler)
 # ------------------------------------------------------------------------------
 # Neuron
 # ------------------------------------------------------------------------------
@@ -17,6 +25,11 @@ DATA_FILE = '/Users/g6714/Data/amazonaws/mnist.pkl'
 
 def sigmoid(x):
     return 1./(1 + exp(-x))
+
+def encode_one_hot(x, dim=10):
+    vector = [0]*dim
+    vector[x] = 1
+    return vector
 # ------------------------------------------------------------------------------
 # Neural Network
 # ------------------------------------------------------------------------------
@@ -141,6 +154,8 @@ class Network:
 
 
 if __name__ == '__main__':
+    # Start
+    log.debug('Constructing network...')
     # This is our main object
     net = Network()
     # Keep track of the neurons
@@ -163,33 +178,24 @@ if __name__ == '__main__':
         for output_id in output_neurons:
             net.connect(hidden_id, output_id, random())
 
-    x = [
-        [0.35, 0.31, 0.23, 0.21, 0.02],
-        [0.25, -0.1, 0.20, 0.81, -1.02],
-        [0.83, 0.21, 0.8, -1.21, 3.02]
-    ]
-    l = [
-        [0, 0],
-        [0, 1],
-        [1, 0]
-    ]
-    # net.evaluate(x)
-    # print(net.neurons)
-    # Labels should be one-hot encoded. For only one output the value is either 0 or 1
-    # label = [1]
-    # net.backpropagate(label)
+    # Load the data set
+    log.info('Loading data...')
+    start = time.time()
+    with open(DATA_FILE, 'rb') as fp:
+        data = pickle.load(fp, encoding='latin1')
+        training_images = data[0][0]
+        training_labels = data[0][1]
+        test_images = data[1][0]
+        test_labels = data[1][1]
+    log.info('Training data set: {} images'.format(training_labels.shape[0]))
+    log.info('Test data set: {} images'.format(test_labels.shape[0]))
+    log.info('Loaded in {:.1f} seconds'.format(time.time() - start))
 
-    for i in range(len(x)):
-        net.evaluate(x[i])
-        net.backpropagate(l[i])
-
-
-
-#    # Load the data set
-##    with open(DATA_FILE, 'rb') as fp:
-##        data = pickle.load(fp, encoding='latin1')
-##        training_images = data[0][0]
-##        training_labels = data[0][1]
-##        test_images = data[1][0]
-##        test_labels = data[1][1]
-#
+    # Train the system
+    for i in range(1):
+        image = training_images[i]
+        label = encode_one_hot(training_labels[i])
+        # Reshape the image to an input vector
+        image.shape = (image.shape[0]*image.shape[1],)
+        net.evaluate(image)
+        net.backpropagate(label)

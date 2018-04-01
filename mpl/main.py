@@ -159,16 +159,10 @@ if __name__ == '__main__':
     # This is our main object
     net = Network()
     # Keep track of the neurons
-    input_neurons = []
-    hidden_neurons = []
-    output_neurons = []
+    input_neurons = [net.add_neuron() for n in range(INPUT_NEURONS)]
+    hidden_neurons = [net.add_neuron() for n in range(HIDDEN_NEURONS)]
+    output_neurons = [net.add_neuron() for n in range(OUTPUT_NEURONS)]
     # Add the neuron layers
-    for n in range(INPUT_NEURONS):
-        input_neurons.append(net.add_neuron())
-    for n in range(HIDDEN_NEURONS):
-        hidden_neurons.append(net.add_neuron())
-    for n in range(OUTPUT_NEURONS):
-        output_neurons.append(net.add_neuron())
     # Connect the neuron layers
     for input_id in input_neurons:
         for hidden_id in hidden_neurons:

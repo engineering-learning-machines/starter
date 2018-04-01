@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from random import random
+from random import shuffle
 from math import exp
 import pickle
 import time
@@ -12,6 +13,10 @@ INPUT_NEURONS = 768
 HIDDEN_NEURONS = 50
 OUTPUT_NEURONS = 10
 DATA_FILE = '/Users/g6714/Data/amazonaws/mnist.pkl'
+BATCH_SIZE = 64
+LEARN_RATE = 0.01
+# Just to control the overall length of the training cycle during development
+MAX_BATCH_COUNT = 8
 
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
@@ -148,6 +153,25 @@ class Network:
             for incoming_neighbor_id in self.backward_connections[n_id].keys():
                 self.backward_connections[n_id][incoming_neighbor_id] = error * self.neurons[incoming_neighbor_id]
 
+    def update_weights(self, batch_size, learn_rate):
+        reverse_sorted_order = list(reversed(self.sorted_order))
+        for n_id in reverse_sorted_order:
+            for incoming_neighbor_id in self.backward_connections[n_id].keys():
+                # Divide the accumulated gradient sum by the batch size to get
+                # the single weight delta
+                weight_delta = self.backward_connections[n_id][incoming_neighbor_id] / batch_size
+                self.forward_connections[incoming_neighbor_id][n_id] += learn_rate * weight_delta
+
+    def get_output_squared_error(self, label):
+        squared_error = 0
+        # We need this for consistencey with back prop
+        output_length = len(label)
+        reverse_sorted_order = list(reversed(self.sorted_order))
+        # Substract the label from the result, square, and accumulate the sum
+        for i, n_id in enumerate(reverse_sorted_order[:output_length]):
+            squared_error += (self.neurons[n_id] - label[i]) **2
+        return squared_error
+
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -185,11 +209,42 @@ if __name__ == '__main__':
     log.info('Test data set: {} images'.format(test_labels.shape[0]))
     log.info('Loaded in {:.1f} seconds'.format(time.time() - start))
 
+    # TODO:
+    # Convert the data into the proper format while loading, should be faster
+    # because of numpy
+
+    # Prepare for testing
+    test_index = list(range(test_labels.shape[0]))
     # Train the system
-    for i in range(1):
-        image = training_images[i]
-        label = encode_one_hot(training_labels[i])
-        # Reshape the image to an input vector
-        image.shape = (image.shape[0]*image.shape[1],)
-        net.evaluate(image)
-        net.backpropagate(label)
+    start = time.time()
+    for batch_index, batch_partition_index in enumerate(range(test_labels.shape[0])[::BATCH_SIZE]):
+        if batch_index >= MAX_BATCH_COUNT:
+            break
+        # Process one batch
+        batch_data = test_images[batch_partition_index:batch_partition_index+BATCH_SIZE]
+        batch_labels = test_labels[batch_partition_index:batch_partition_index+BATCH_SIZE]
+        log.debug('Processing batch: {:0>6}'.format(batch_index+1))
+        for image, label_digit in zip(batch_data, batch_labels):
+            image.shape = (image.shape[0] * image.shape[1],)
+            label = encode_one_hot(label_digit)
+            net.evaluate(image)
+            net.backpropagate(label)
+        net.update_weights(BATCH_SIZE, LEARN_RATE)
+
+        # Test every x batches: (might compare overfitting vs unseen test data)
+        if batch_index % 4:
+            total_loss = 0
+            shuffle(test_index)
+            for image, label_digit in zip(
+                    test_images[test_index[:BATCH_SIZE]], test_labels[test_index[:BATCH_SIZE]]
+            ):
+              image.shape = (image.shape[0] * image.shape[1],)
+              label = encode_one_hot(label_digit)
+              net.evaluate(image)
+              total_loss += net.get_output_squared_error(label)
+            total_loss = total_loss / BATCH_SIZE
+            log.info('Loss: {:.6f}'.format(total_loss))
+
+
+
+    log.info('Trained batch of {:} in: {:.1f} seconds'.format(BATCH_SIZE, time.time() - start))

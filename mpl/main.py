@@ -30,6 +30,8 @@ class Network:
         self.forward_connections = {}
         # Backward connections: id -> {id -> delta_weight_sum}
         self.backward_connections = {}
+        # Sorted neurons
+        self.sorted_order = []
 
     def add_neuron(self):
         neuron_count = len(self.neurons)
@@ -75,27 +77,34 @@ class Network:
             return None
         return sorted_list
 
-#    def evaluate(self, input_):
-#        neuron_count = len(self.connections.keys())
-#        sorted_neurons = self.sort()
-#        # Store the outputs
-#        outputs = [0] * neuron_count
-#        # First we need to multiply the input with the input neurons. These are not sigmoid neurons, so we have a simple
-#        # multiplication to produce their output. We assume that the input is always equal to the number of input
-#        # neurons.
-#        for n_id in sorted_neurons[:len(input_)]:
-#            for neighbor_id, weight in self.connections[n_id].items():
-#                outputs[neighbor_id] += input_[n_id] * weight
-#
-#        # Calculate the output of the rest of the sigmoid neurons
-#        for n_id in sorted_neurons[n_id+1:]:
-#            outputs[n_id] = sigmoid(outputs[n_id])
-#            # push the result to the neighbor neurons
-#            for neighbor_id, weight in self.connections[n_id].items():
-#                outputs[neighbor_id] += outputs[n_id] * weight
-#
-#        print(outputs)
-#
+    def evaluate(self, input_):
+        # Clean up the previous values, so we don't have to worry about this
+        for n_id in self.neurons:
+            self.neurons[n_id] = 0
+
+        # Order the neurons in the direction of forward propagation. We can reuse this list
+        if len(self.sorted_order) == 0:
+              self.sorted_order = self.sort()
+
+        # First we need to multiply the input with the input neurons. These are not sigmoid neurons, so we have a simple
+        # multiplication to produce their output. We assume that the input is always equal to the number of input
+        # neurons.
+        input_length = len(input_)
+        for n_id in self.sorted_order[:input_length]:
+            # Push the weight x input product to the next layer
+            for neighbor_id, weight in self.forward_connections[n_id].items():
+                # outputs[neighbor_id] += input_[n_id] * weight
+                self.neurons[neighbor_id] += input_[n_id] * weight
+
+        # Calculate the output of the rest of the sigmoid neurons
+        for n_id in self.sorted_order[input_length+1:]:
+            # Apply the activation function to the accumulated weighted sum produced
+            # by the previous operations
+            self.neurons[n_id] = sigmoid(self.neurons[n_id])
+            # push the result to the neighbor neurons
+            for neighbor_id, weight in self.forward_connections[n_id].items():
+                self.neurons[neighbor_id] += self.neurons[n_id] * weight
+
 # ------------------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------------------
@@ -124,16 +133,12 @@ if __name__ == '__main__':
         for output_id in output_neurons:
             net.connect(hidden_id, output_id, random())
 
-    print(net.sort())
-##    result = net.evaluate([0.35, 0.31, 0.23, 0.21, 0.02])
-##    print(result)
-#
-#
-#
-#
-#
-#
-#
+    x = [0.35, 0.31, 0.23, 0.21, 0.02]
+    net.evaluate(x)
+    print(net.neurons)
+
+
+
 #    # Load the data set
 ##    with open(DATA_FILE, 'rb') as fp:
 ##        data = pickle.load(fp, encoding='latin1')

@@ -10,15 +10,16 @@ import sys
 # Configuration
 # ------------------------------------------------------------------------------
 INPUT_NEURONS = 768
-HIDDEN_NEURONS = 50
+HIDDEN_NEURONS = 20
 OUTPUT_NEURONS = 10
 DATA_FILE = '/Users/g6714/Data/amazonaws/mnist.pkl'
-# BATCH_SIZE = 64
-BATCH_SIZE = 16
-LEARN_RATE = 0.1
+BATCH_SIZE = 64
+LEARN_RATE = 0.05
 # Just to control the overall length of the training cycle during development
-MAX_BATCH_COUNT = 500
+MAX_BATCH_COUNT = 60000
 BATCH_TEST_INTERVAL = 10
+NORMALIZATION_FACTOR = 1./255
+WEIGHT_INIT_SCALING_FACTOR = 0.01
 
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
@@ -33,10 +34,19 @@ log.addHandler(handler)
 def sigmoid(x):
     return 1./(1 + exp(-x))
 
+
 def encode_one_hot(x, dim=10):
     vector = [0]*dim
     vector[x] = 1
     return vector
+
+
+def dot_product(v, w):
+    return sum([x*y for x, y in zip(v, w)])
+
+
+def subtract_vectors(v, w):
+    return [x - y for x, y in zip(v, w)]
 # ------------------------------------------------------------------------------
 # Neural Network
 # ------------------------------------------------------------------------------
@@ -82,14 +92,14 @@ class Network:
         # Connect to input layer with random weights
         for input_id in self.layers['input']:
             for hidden_id in self.layers['hidden']:
-                self.__connect(input_id, hidden_id, random())
+                self.__connect(input_id, hidden_id, WEIGHT_INIT_SCALING_FACTOR * random())
 
     def add_output_layer(self, output_neuron_count):
         self.__add_layer('output', output_neuron_count)
         # Connect to hidden layer with random weights
         for hidden_id in self.layers['hidden']:
             for output_id in self.layers['output']:
-                self.__connect(hidden_id, output_id, random())
+                self.__connect(hidden_id, output_id, WEIGHT_INIT_SCALING_FACTOR * random())
 
     def sort(self):
         # Store the resulting sorted list of neurons here
@@ -120,25 +130,32 @@ class Network:
         return sorted_list
 
     def evaluate(self, input_):
+        """
+        Calculate the forward pass of the neural network. This is basically the neural network function
+        R^n -> R^m
+        where n is the input vector dimension and m is the output vector dimension.
+        :param input_: Image vector
+        :return: Vector of probabilities for individual classes
+        """
         # Clean up the previous values, so we don't have to worry about this
         for n_id in self.neurons:
             self.neurons[n_id] = 0
 
         # Order the neurons in the direction of forward propagation. We can reuse this list
         if len(self.sorted_order) == 0:
-              self.sorted_order = self.sort()
+            self.sorted_order = self.sort()
 
         # First we need to multiply the input with the input neurons. These are not sigmoid neurons, so we have a simple
         # multiplication to produce their output. We assume that the input is always equal to the number of input
         # neurons.
-        input_length = len(input_)
-        for n_id in self.sorted_order[:input_length]:
-            # Push the weight x input product to the next layer
+        for n_id in self.layers['input']:
             for neighbor_id, weight in self.forward_connections[n_id].items():
-                # outputs[neighbor_id] += input_[n_id] * weight
+                # Since we added the input neuron first, their indices should be 0..m where
+                # m is the dimension of the input vector
                 self.neurons[neighbor_id] += input_[n_id] * weight
 
         # Calculate the output of the rest of the sigmoid neurons
+        input_length = len(self.layers['input'])
         for n_id in self.sorted_order[input_length+1:]:
             # Apply the activation function to the accumulated weighted sum produced
             # by the previous operations
@@ -146,6 +163,8 @@ class Network:
             # push the result to the neighbor neurons
             for neighbor_id, weight in self.forward_connections[n_id].items():
                 self.neurons[neighbor_id] += self.neurons[n_id] * weight
+
+        return [self.neurons[n_id] for n_id in self.layers['output']]
 
     def backpropagate(self, label):
         """
@@ -185,6 +204,7 @@ class Network:
                 # the single weight delta
                 weight_delta = self.backward_connections[n_id][incoming_neighbor_id] / batch_size
                 self.forward_connections[incoming_neighbor_id][n_id] += learn_rate * weight_delta
+                # self.forward_connections[incoming_neighbor_id][n_id] += learn_rate * random()
 
     def get_output_squared_error(self, label):
         squared_error = 0
@@ -216,9 +236,9 @@ if __name__ == '__main__':
     start = time.time()
     with open(DATA_FILE, 'rb') as fp:
         data = pickle.load(fp, encoding='latin1')
-        training_images = data[0][0]
+        training_images = NORMALIZATION_FACTOR * data[0][0]
         training_labels = data[0][1]
-        test_images = data[1][0]
+        test_images = NORMALIZATION_FACTOR * data[1][0]
         test_labels = data[1][1]
     log.info('Training data set: {} images'.format(training_labels.shape[0]))
     log.info('Test data set: {} images'.format(test_labels.shape[0]))
@@ -248,8 +268,11 @@ if __name__ == '__main__':
         batch_data = test_images[batch_partition:batch_partition+BATCH_SIZE]
         batch_labels = test_labels[batch_partition:batch_partition+BATCH_SIZE]
         for image, label in zip(batch_data, batch_labels):
-            net.evaluate(image)
+            output = net.evaluate(image)
             net.backpropagate(label)
+#            delta = subtract_vectors(label, output)
+#            delta_squared = dot_product(delta, delta)
+#            squared_error = net.get_output_squared_error(label)
         # Update weights when finished with batch
         net.update_weights(batch_data.shape[0], LEARN_RATE)
         log.debug('Processed batch: {:0>6} [{:.1f}] s'.format(batch_index+1, time.time() - start_batch))

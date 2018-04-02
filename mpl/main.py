@@ -54,9 +54,6 @@ class Network:
         self.sorted_order = []
         # Architecture
         self.layers = {}
-        # self.input_neurons = []
-        # self.hidden_neurons = []
-        # self.output_neurons = []
 
     def add_neuron(self):
         neuron_count = len(self.neurons)
@@ -117,7 +114,7 @@ class Network:
                 if in_degree[neighbor_id] == 0:
                     queue.add(neighbor_id)
 
-        # We need to check for cycles (Kahn's only makes sense for a DAG)
+        # We need to check for cycles (Kahn's algorithm only makes sense for a DAG)
         if len(sorted_list) != len(in_degree):
             return None
         return sorted_list
@@ -209,21 +206,10 @@ if __name__ == '__main__':
     log.debug('Constructing network...')
     # This is our main object
     net = Network()
-    # Keep track of the neurons
-    # input_neurons = [net.add_neuron() for n in range(INPUT_NEURONS)]
-    # hidden_neurons = [net.add_neuron() for n in range(HIDDEN_NEURONS)]
-    # output_neurons = [net.add_neuron() for n in range(OUTPUT_NEURONS)]
+    # Construct the neural network
     net.add_input_layer(INPUT_NEURONS)
     net.add_hidden_layer(HIDDEN_NEURONS)
-    # Add the neuron layers
-    # Connect the neuron layers
-#    for input_id in input_neurons:
-#        for hidden_id in hidden_neurons:
-#            net.connect(input_id, hidden_id, random())
-
-#    for hidden_id in hidden_neurons:
-#        for output_id in output_neurons:
-#            net.connect(hidden_id, output_id, random())
+    net.add_output_layer(OUTPUT_NEURONS)
 
     # Load the data set
     log.info('Loading data...')

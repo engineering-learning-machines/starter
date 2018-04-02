@@ -218,14 +218,14 @@ if __name__ == '__main__':
     # Prepare for testing
     test_index = list(range(test_labels.shape[0]))
     # Train the system
-    start = time.time()
+    start_total_training_time = time.time()
     for batch_index, batch_partition in enumerate(range(test_labels.shape[0])[::BATCH_SIZE]):
         if batch_index >= MAX_BATCH_COUNT:
             break
         # Process one batch
+        start_batch = time.time()
         batch_data = test_images[batch_partition:batch_partition+BATCH_SIZE]
         batch_labels = test_labels[batch_partition:batch_partition+BATCH_SIZE]
-        log.debug('Processing batch: {:0>6}'.format(batch_index+1))
         for image, label_digit in zip(batch_data, batch_labels):
             image.shape = (image.shape[0] * image.shape[1],)
             label = encode_one_hot(label_digit)
@@ -233,6 +233,7 @@ if __name__ == '__main__':
             net.backpropagate(label)
         # Update weights when finished with batch
         net.update_weights(batch_labels.shape[0], LEARN_RATE)
+        log.debug('Processed batch: {:0>6} [{:.1f}] s'.format(batch_index+1, time.time() - start_batch))
 
         # Test every BATCH_TEST_INTERVAL batches:
         # (might compare overfitting vs unseen test data)
@@ -249,4 +250,4 @@ if __name__ == '__main__':
             total_loss = total_loss / BATCH_SIZE
             log.info('Test Loss: {:.6f}'.format(total_loss))
 
-    log.info('Trained batch of {:} in: {:.1f} seconds'.format(BATCH_SIZE, time.time() - start))
+    log.info('Total training time: {:.1f} seconds'.format(time.time() - start_total_training_time))

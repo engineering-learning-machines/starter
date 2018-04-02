@@ -52,6 +52,11 @@ class Network:
         self.backward_connections = {}
         # Sorted neurons
         self.sorted_order = []
+        # Architecture
+        self.layers = {}
+        # self.input_neurons = []
+        # self.hidden_neurons = []
+        # self.output_neurons = []
 
     def add_neuron(self):
         neuron_count = len(self.neurons)
@@ -64,10 +69,30 @@ class Network:
         # Return a handle if needed
         return neuron_count
 
-    def connect(self, source, target, weight=0):
+    def __add_layer(self, name, neuron_count):
+        self.layers[name] = [net.add_neuron() for _ in range(neuron_count)]
+
+    def __connect(self, source, target, weight=0):
         # Set up the forward and backward connections between neurons
         self.forward_connections[source][target] = weight
         self.backward_connections[target][source] = 0
+
+    def add_input_layer(self, input_neuron_count):
+        self.__add_layer('input', input_neuron_count)
+
+    def add_hidden_layer(self, hidden_neuron_count):
+        self.__add_layer('hidden', hidden_neuron_count)
+        # Connect to input layer with random weights
+        for input_id in self.layers['input']:
+            for hidden_id in self.layers['hidden']:
+                self.__connect(input_id, hidden_id, random())
+
+    def add_output_layer(self, output_neuron_count):
+        self.__add_layer('output', output_neuron_count)
+        # Connect to hidden layer with random weights
+        for hidden_id in self.layers['hidden']:
+            for output_id in self.layers['output']:
+                self.__connect(hidden_id, output_id, random())
 
     def sort(self):
         # Store the resulting sorted list of neurons here
@@ -166,12 +191,12 @@ class Network:
 
     def get_output_squared_error(self, label):
         squared_error = 0
-        # We need this for consistencey with back prop
+        # We need this for consistence with back prop
         output_length = len(label)
         reverse_sorted_order = list(reversed(self.sorted_order))
-        # Substract the label from the result, square, and accumulate the sum
+        # Subtract the label from the result, square, and accumulate the sum
         for i, n_id in enumerate(reverse_sorted_order[:output_length]):
-            squared_error += (self.neurons[n_id] - label[i]) **2
+            squared_error += (self.neurons[n_id] - label[i]) ** 2
         return squared_error
 
 # ------------------------------------------------------------------------------
@@ -185,18 +210,20 @@ if __name__ == '__main__':
     # This is our main object
     net = Network()
     # Keep track of the neurons
-    input_neurons = [net.add_neuron() for n in range(INPUT_NEURONS)]
-    hidden_neurons = [net.add_neuron() for n in range(HIDDEN_NEURONS)]
-    output_neurons = [net.add_neuron() for n in range(OUTPUT_NEURONS)]
+    # input_neurons = [net.add_neuron() for n in range(INPUT_NEURONS)]
+    # hidden_neurons = [net.add_neuron() for n in range(HIDDEN_NEURONS)]
+    # output_neurons = [net.add_neuron() for n in range(OUTPUT_NEURONS)]
+    net.add_input_layer(INPUT_NEURONS)
+    net.add_hidden_layer(HIDDEN_NEURONS)
     # Add the neuron layers
     # Connect the neuron layers
-    for input_id in input_neurons:
-        for hidden_id in hidden_neurons:
-            net.connect(input_id, hidden_id, random())
+#    for input_id in input_neurons:
+#        for hidden_id in hidden_neurons:
+#            net.connect(input_id, hidden_id, random())
 
-    for hidden_id in hidden_neurons:
-        for output_id in output_neurons:
-            net.connect(hidden_id, output_id, random())
+#    for hidden_id in hidden_neurons:
+#        for output_id in output_neurons:
+#            net.connect(hidden_id, output_id, random())
 
     # Load the data set
     log.info('Loading data...')

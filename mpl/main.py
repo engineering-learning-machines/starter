@@ -234,10 +234,7 @@ if __name__ == '__main__':
         start_batch = time.time()
         batch_data = test_images[batch_partition:batch_partition+BATCH_SIZE]
         batch_labels = test_labels[batch_partition:batch_partition+BATCH_SIZE]
-        #for image, label_digit in zip(batch_data, batch_labels):
         for image, label in zip(batch_data, batch_labels):
-            # image.shape = (image.shape[0] * image.shape[1],)
-            # label = encode_one_hot(label_digit)
             net.evaluate(image)
             net.backpropagate(label)
         # Update weights when finished with batch
@@ -249,14 +246,7 @@ if __name__ == '__main__':
         if (batch_index + 1) % BATCH_TEST_INTERVAL == 0:
             total_loss = 0
             shuffle(test_index)
-            # for image, label_digit in zip(
-            #for image, label in zip(
-            #        test_images[test_index[:BATCH_SIZE]],
-            #        test_labels[test_index[:BATCH_SIZE]]
-            #):
             for index in test_index[:BATCH_SIZE]:
-              # image.shape = (image.shape[0] * image.shape[1],)
-              # label = encode_one_hot(label_digit)
                 image = test_images[index]
                 label = test_labels[index]
                 net.evaluate(image)

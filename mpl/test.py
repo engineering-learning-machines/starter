@@ -50,7 +50,6 @@ if __name__ == '__main__':
     with open(DATA_FILE, 'rb') as fp:
         data = pickle.load(fp, encoding='latin1')
         test_images = NORMALIZATION_FACTOR * data[1][0]
-        # test_labels = data[1][1]
         test_labels = data[1][1]
     log.info('Test data set: {} images'.format(test_labels.shape[0]))
     log.info('Loaded in {:.1f} seconds'.format(time.time() - start))
@@ -77,7 +76,7 @@ if __name__ == '__main__':
     # Sum of all incorrectly classified digits for each class
     incorrect_count = [0]*len(correct_count)
     # Evaluate on test data
-    for index in test_index[:500]:
+    for index in test_index[:100]:
         image = test_images[index]
         label = labels[index]
         digit_label = test_labels[index]
@@ -85,20 +84,22 @@ if __name__ == '__main__':
         total_loss += net.get_output_squared_error(label)
         # Determine which digit this was and whether it was correctly classified
         output = net.get_output()
-        if max(output) != output[digit_label]:
-            incorrect_count[digit_label] += 1
-        else:
-            correct_count[digit_label] += 1
+        print(output)
+#        if max(output) != output[digit_label]:
+#            incorrect_count[digit_label] += 1
+#        else:
+#            correct_count[digit_label] += 1
 
+    total_loss = total_loss / 100
     log.info('Test Loss: {:.6f}'.format(total_loss))
     log.info('Total testing time: {:.1f} seconds'.format(time.time() - start_total_testing_time))
 
-    mean_accuracy = 0
-    for i in range(len(correct_count)):
-        total_count = correct_count[i] + incorrect_count[i]
-        accuracy = correct_count[i] / total_count
-        log.info('Class {} accuracy: {:.2f}'.format(i, accuracy))
-        mean_accuracy += accuracy
-    mean_accuracy /= len(correct_count)
-    log.info('Mean accuracy: {:.2f}'.format(mean_accuracy))
-    log.info('Classification rate: {:.1f} %'.format(mean_accuracy*100))
+#    mean_accuracy = 0
+#    for i in range(len(correct_count)):
+#        total_count = correct_count[i] + incorrect_count[i]
+#        accuracy = correct_count[i] / total_count
+#        log.info('Class {} accuracy: {:.2f}'.format(i, accuracy))
+#        mean_accuracy += accuracy
+#    mean_accuracy /= len(correct_count)
+#    log.info('Mean accuracy: {:.2f}'.format(mean_accuracy))
+#    log.info('Classification rate: {:.1f} %'.format(mean_accuracy*100))

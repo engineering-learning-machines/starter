@@ -61,6 +61,8 @@ class Network:
         self.neurons = {}
         # Biases
         self.biases = {}
+        # Bias gradients
+        self.bias_gradients = {}
         # Forward connections: id -> {id -> weight}
         self.forward_connections = {}
         # Backward connections: id -> {id -> delta_weight_sum}
@@ -76,6 +78,8 @@ class Network:
         self.neurons[neuron_count] = 0
         # Add the neuron's bias
         self.biases[neuron_count] = 0
+        # Bias gradients
+        self.bias_gradients[neuron_count] = 0
         # Add to the feed-forward connections
         self.forward_connections[neuron_count] = {}
         # Add to the backpropagation connections
@@ -189,6 +193,8 @@ class Network:
             error = (label[i] - output) * output * (1. - output)
             for incoming_neighbor_id in self.backward_connections[n_id].keys():
                 self.backward_connections[n_id][incoming_neighbor_id] = error * self.neurons[incoming_neighbor_id]
+            # Calculate bias gradients
+            self.bias_gradients[n_id] = error
 
         # Backpropagation rule for the rest of the neurons
         for n_id in reverse_sorted_order[output_length+1:]:
@@ -203,6 +209,8 @@ class Network:
             # Multiply with the previous inputs in the chain to finalize the derivatives w.r.t. each incoming connection
             for incoming_neighbor_id in self.backward_connections[n_id].keys():
                 self.backward_connections[n_id][incoming_neighbor_id] = error * self.neurons[incoming_neighbor_id]
+            # Calculate bias gradients
+            self.bias_gradients[n_id] = error
 
     def update_weights(self, batch_size, learn_rate):
         reverse_sorted_order = list(reversed(self.sorted_order))
@@ -213,6 +221,10 @@ class Network:
                 weight_delta = self.backward_connections[n_id][incoming_neighbor_id] / batch_size
                 self.forward_connections[incoming_neighbor_id][n_id] += learn_rate * weight_delta
                 # self.forward_connections[incoming_neighbor_id][n_id] += learn_rate * random()
+
+    def update_biases(self, batch_size, learn_rate):
+        for n_id in self.biases.keys():
+            self.biases[n_id] += learn_rate * self.bias_gradients[n_id]
 
     def get_output_squared_error(self, label):
         squared_error = 0
@@ -280,6 +292,7 @@ if __name__ == '__main__':
             net.backpropagate(label)
         # Update weights when finished with batch
         net.update_weights(batch_data.shape[0], LEARN_RATE)
+        net.update_biases(batch_data.shape[0], LEARN_RATE)
         log.debug('Processed batch: {:0>6} [{:.1f}] s'.format(batch_index+1, time.time() - start_batch))
 
         # Test every BATCH_TEST_INTERVAL batches:

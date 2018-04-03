@@ -10,7 +10,7 @@ import sys
 # Configuration
 # ------------------------------------------------------------------------------
 INPUT_NEURONS = 768
-HIDDEN_NEURONS = 20
+HIDDEN_NEURONS = 50
 OUTPUT_NEURONS = 10
 DATA_FILE = '/Users/g6714/Data/amazonaws/mnist.pkl'
 BATCH_SIZE = 32
@@ -20,14 +20,18 @@ MAX_BATCH_COUNT = 60000
 BATCH_TEST_INTERVAL = 10
 NORMALIZATION_FACTOR = 1./255
 WEIGHT_INIT_SCALING_FACTOR = 0.01
+LOG_FORMAT = '%(asctime)-15s %(levelname)-8s %(message)s'
 
 log = logging.getLogger()
+formatter = logging.Formatter(LOG_FORMAT)
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
 handler.setLevel(logging.DEBUG)
+handler.setFormatter(formatter)
 log.addHandler(handler)
 file_handler = logging.FileHandler('nn.log')
 file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(formatter)
 log.addHandler(file_handler)
 # ------------------------------------------------------------------------------
 # Neuron

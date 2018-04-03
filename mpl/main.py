@@ -59,6 +59,8 @@ class Network:
     def __init__(self):
         # Neurons: id -> output
         self.neurons = {}
+        # Biases
+        self.biases = {}
         # Forward connections: id -> {id -> weight}
         self.forward_connections = {}
         # Backward connections: id -> {id -> delta_weight_sum}
@@ -72,6 +74,8 @@ class Network:
         neuron_count = len(self.neurons)
         # Add the new neuron to the neuron list
         self.neurons[neuron_count] = 0
+        # Add the neuron's bias
+        self.biases[neuron_count] = 0
         # Add to the feed-forward connections
         self.forward_connections[neuron_count] = {}
         # Add to the backpropagation connections
@@ -161,8 +165,9 @@ class Network:
         input_length = len(self.layers['input'])
         for n_id in self.sorted_order[input_length+1:]:
             # Apply the activation function to the accumulated weighted sum produced
-            # by the previous operations
-            self.neurons[n_id] = sigmoid(self.neurons[n_id])
+            # by the previous operations + the neuron's bias
+            # self.neurons[n_id] = sigmoid(self.neurons[n_id])
+            self.neurons[n_id] = sigmoid(self.neurons[n_id] + self.biases[n_id])
             # push the result to the neighbor neurons
             for neighbor_id, weight in self.forward_connections[n_id].items():
                 self.neurons[neighbor_id] += self.neurons[n_id] * weight

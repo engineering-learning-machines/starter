@@ -14,7 +14,7 @@ INPUT_NEURONS = 768
 HIDDEN_NEURONS = 50
 OUTPUT_NEURONS = 10
 DATA_FILE = '/Users/g6714/Data/amazonaws/mnist.pkl'
-BATCH_SIZE = 64
+BATCH_SIZE = 100
 LEARN_RATE = 0.05
 # Just to control the overall length of the training cycle during development
 MAX_BATCH_COUNT = 60000
@@ -93,7 +93,7 @@ class Network:
         return neuron_count
 
     def __add_layer(self, name, neuron_count):
-        self.layers[name] = [net.add_neuron() for _ in range(neuron_count)]
+        self.layers[name] = [self.add_neuron() for _ in range(neuron_count)]
 
     def __connect(self, source, target, weight=0):
         # Set up the forward and backward connections between neurons
@@ -313,4 +313,12 @@ if __name__ == '__main__':
             total_loss = total_loss / BATCH_SIZE
             log.info('Test Loss: {:.6f}'.format(total_loss))
 
+        # Save model at this checkpoint
+        with open('model.pkl', 'wb') as fp:
+            pickle.dump(net, fp)
+
     log.info('Total training time: {:.1f} seconds'.format(time.time() - start_total_training_time))
+
+    # Save model when training is done
+    with open('model.pkl', 'wb') as fp:
+        pickle.dump(net, fp)

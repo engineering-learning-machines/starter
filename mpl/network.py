@@ -199,3 +199,10 @@ class Network:
         for i, n_id in enumerate(reverse_sorted_order[:output_length]):
             squared_error += (self.neurons[n_id] - label[i]) ** 2
         return squared_error
+
+    def get_output(self):
+        # We need this for consistence with back prop
+        output_length = len(self.layers['output'])
+        reverse_sorted_order = list(reversed(self.sorted_order))
+        # Subtract the label from the result, square, and accumulate the sum
+        return [self.neurons[n_id] for n_id in reverse_sorted_order[:output_length]]

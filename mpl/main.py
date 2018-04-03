@@ -13,7 +13,7 @@ INPUT_NEURONS = 768
 HIDDEN_NEURONS = 20
 OUTPUT_NEURONS = 10
 DATA_FILE = '/Users/g6714/Data/amazonaws/mnist.pkl'
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 LEARN_RATE = 0.05
 # Just to control the overall length of the training cycle during development
 MAX_BATCH_COUNT = 60000
@@ -26,6 +26,9 @@ log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
 handler.setLevel(logging.DEBUG)
 log.addHandler(handler)
+file_handler = logging.FileHandler('nn.log')
+file_handler.setLevel(logging.DEBUG)
+log.addHandler(file_handler)
 # ------------------------------------------------------------------------------
 # Neuron
 # ------------------------------------------------------------------------------
@@ -260,19 +263,16 @@ if __name__ == '__main__':
     test_index = list(range(test_images.shape[0]))
     # Train the system
     start_total_training_time = time.time()
-    for batch_index, batch_partition in enumerate(range(test_images.shape[0])[::BATCH_SIZE]):
+    for batch_index, batch_partition in enumerate(range(training_images.shape[0])[::BATCH_SIZE]):
         if batch_index >= MAX_BATCH_COUNT:
             break
         # Process one batch
         start_batch = time.time()
-        batch_data = test_images[batch_partition:batch_partition+BATCH_SIZE]
-        batch_labels = test_labels[batch_partition:batch_partition+BATCH_SIZE]
+        batch_data = training_images[batch_partition:batch_partition+BATCH_SIZE]
+        batch_labels = training_labels[batch_partition:batch_partition+BATCH_SIZE]
         for image, label in zip(batch_data, batch_labels):
             output = net.evaluate(image)
             net.backpropagate(label)
-#            delta = subtract_vectors(label, output)
-#            delta_squared = dot_product(delta, delta)
-#            squared_error = net.get_output_squared_error(label)
         # Update weights when finished with batch
         net.update_weights(batch_data.shape[0], LEARN_RATE)
         log.debug('Processed batch: {:0>6} [{:.1f}] s'.format(batch_index+1, time.time() - start_batch))

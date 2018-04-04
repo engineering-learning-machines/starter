@@ -152,7 +152,8 @@ class Network:
         # We need to handle outputs separately. More code for labels with dim > 1?
         # Here we use the index i just to fetch elements of label. The fixed order list guarantees that
         # the output neuron values are always matched with their labels.
-        for i, n_id in enumerate(reverse_sorted_order[:output_length]):
+        #for i, n_id in enumerate(reverse_sorted_order[:output_length]):
+        for i, n_id in enumerate(self.layers['output']):
             output = self.neurons[n_id]
             error = (label[i] - output) * output * (1. - output)
             for incoming_neighbor_id in self.backward_connections[n_id].keys():
@@ -196,7 +197,8 @@ class Network:
         output_length = len(label)
         reverse_sorted_order = list(reversed(self.sorted_order))
         # Subtract the label from the result, square, and accumulate the sum
-        for i, n_id in enumerate(reverse_sorted_order[:output_length]):
+        # for i, n_id in enumerate(reverse_sorted_order[:output_length]):
+        for i, n_id in enumerate(self.layers['output']):
             squared_error += (self.neurons[n_id] - label[i]) ** 2
         return squared_error
 

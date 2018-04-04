@@ -57,7 +57,7 @@ class Network:
     def __connect(self, source, target, weight=0):
         # Set up the forward and backward connections between neurons
         self.forward_connections[source][target] = weight
-        self.backward_connections[target][source] = 0
+        self.backward_connections[target][source] = WEIGHT_INIT_SCALING_FACTOR * random()
 
     def add_input_layer(self, input_neuron_count):
         self.__add_layer('input', input_neuron_count)

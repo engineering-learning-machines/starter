@@ -83,7 +83,7 @@ class Network:
         queue = {
             n_id for n_id, incoming_connections
             in self.backward_connections.items()
-            if len(incoming_connections)==0
+            if len(incoming_connections) == 0
         }
         # We need to update a list of the in-degrees of all neurons
         in_degree = {n_id: len(connections) for n_id, connections in self.backward_connections.items()}

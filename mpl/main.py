@@ -12,7 +12,7 @@ HIDDEN_NEURONS = 50
 OUTPUT_NEURONS = 10
 DATA_FILE = '/Users/g6714/Data/amazonaws/mnist.pkl'
 BATCH_SIZE = 32
-LEARN_RATE = 0.05
+LEARN_RATE = 0.01
 # Just to control the overall length of the training cycle during development
 MAX_BATCH_COUNT = 60000
 BATCH_TEST_INTERVAL = 10

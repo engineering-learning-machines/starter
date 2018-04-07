@@ -80,11 +80,13 @@ if __name__ == '__main__':
         image = test_images[index]
         label = labels[index]
         digit_label = test_labels[index]
-        net.evaluate(image)
+        output = net.evaluate(image)
         total_loss += net.get_output_squared_error(label)
         # Determine which digit this was and whether it was correctly classified
-        output = net.get_output()
         print(output)
+        print(label)
+        print(digit_label)
+        print(max(output))
 #        if max(output) != output[digit_label]:
 #            incorrect_count[digit_label] += 1
 #        else:

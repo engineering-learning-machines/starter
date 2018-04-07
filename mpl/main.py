@@ -16,6 +16,7 @@ LEARN_RATE = 0.01
 # Just to control the overall length of the training cycle during development
 MAX_BATCH_COUNT = 60000
 BATCH_TEST_INTERVAL = 10
+EPOCH_COUNT = 10
 NORMALIZATION_FACTOR = 1./255
 # WEIGHT_INIT_SCALING_FACTOR = 0.01
 LOG_FORMAT = '%(asctime)-15s %(levelname)-8s %(message)s'
@@ -81,44 +82,57 @@ if __name__ == '__main__':
     test_labels = [encode_one_hot(label) for label in test_labels]
     log.info('Done in {:.1f} s'.format(time.time() - start))
 
-    # Prepare for testing
+    # Create an index for the training data
+    training_index = list(range(training_images.shape[0]))
+    # Create an index for the testing data
     test_index = list(range(test_images.shape[0]))
-    # Train the system
-    start_total_training_time = time.time()
-    for batch_index, batch_partition in enumerate(range(training_images.shape[0])[::BATCH_SIZE]):
-        if batch_index >= MAX_BATCH_COUNT:
-            break
-        # Process one batch
-        start_batch = time.time()
-        batch_data = training_images[batch_partition:batch_partition+BATCH_SIZE]
-        batch_labels = training_labels[batch_partition:batch_partition+BATCH_SIZE]
-        for image, label in zip(batch_data, batch_labels):
-            output = net.evaluate(image)
-            net.backpropagate(label)
-        # Update weights when finished with batch
-        net.update_weights(batch_data.shape[0], LEARN_RATE)
-        net.update_biases(batch_data.shape[0], LEARN_RATE)
-        log.debug('Processed batch: {:0>6} [{:.1f}] s'.format(batch_index+1, time.time() - start_batch))
 
-        # Test every BATCH_TEST_INTERVAL batches:
-        # (might compare overfitting vs unseen test data)
-        if (batch_index + 1) % BATCH_TEST_INTERVAL == 0:
-            total_loss = 0
-            shuffle(test_index)
-            for index in test_index[:BATCH_SIZE]:
-                image = test_images[index]
-                label = test_labels[index]
-                net.evaluate(image)
-                total_loss += net.get_output_squared_error(label)
-            total_loss = total_loss / BATCH_SIZE
-            log.info('Test Loss: {:.6f}'.format(total_loss))
+    for epoch_index in range(EPOCH_COUNT):
+        # Randomize the training data
+        shuffle(training_index)
+        # Train the system
+        start_total_training_time = time.time()
+        for batch_index, batch_partition in enumerate(range(training_images.shape[0])[::BATCH_SIZE]):
+            if batch_index >= MAX_BATCH_COUNT:
+                break
+            # Process one batch
+            start_batch = time.time()
+            batch_item_indices = training_index[batch_partition:batch_partition+BATCH_SIZE]
+            # batch_data = training_images[batch_partition:batch_partition+BATCH_SIZE]
+            # batch_labels = training_labels[batch_partition:batch_partition+BATCH_SIZE]
+            # for image, label in zip(batch_data, batch_labels):
+            for j in batch_item_indices:
+                # output = net.evaluate(image)
+                # net.backpropagate(label)
+                output = net.evaluate(training_images[j])
+                net.backpropagate(training_labels[j])
 
-        # Save model at this checkpoint
+            # Update weights when finished with batch
+            # net.update_weights(batch_data.shape[0], LEARN_RATE)
+            net.update_weights(len(batch_item_indices), LEARN_RATE)
+            # net.update_biases(batch_data.shape[0], LEARN_RATE)
+            net.update_biases(len(batch_item_indices), LEARN_RATE)
+            log.debug('Processed batch: {:0>6} [{:.1f}] s'.format(batch_index+1, time.time() - start_batch))
+
+            # Test every BATCH_TEST_INTERVAL batches:
+            # (might compare overfitting vs unseen test data)
+            if (batch_index + 1) % BATCH_TEST_INTERVAL == 0:
+                total_loss = 0
+                shuffle(test_index)
+                for index in test_index[:BATCH_SIZE]:
+                    image = test_images[index]
+                    label = test_labels[index]
+                    net.evaluate(image)
+                    total_loss += net.get_output_squared_error(label)
+                total_loss = total_loss / BATCH_SIZE
+                log.info('Test Loss: {:.6f}'.format(total_loss))
+
+            # Save model at this checkpoint
+            with open('model.pkl', 'wb') as fp:
+                pickle.dump(net, fp)
+
+        log.info('Total training time: {:.1f} seconds'.format(time.time() - start_total_training_time))
+
+        # Save model when training is done
         with open('model.pkl', 'wb') as fp:
             pickle.dump(net, fp)
-
-    log.info('Total training time: {:.1f} seconds'.format(time.time() - start_total_training_time))
-
-    # Save model when training is done
-    with open('model.pkl', 'wb') as fp:
-        pickle.dump(net, fp)

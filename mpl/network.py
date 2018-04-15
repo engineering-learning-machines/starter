@@ -208,3 +208,24 @@ class Network:
         reverse_sorted_order = list(reversed(self.sorted_order))
         # Subtract the label from the result, square, and accumulate the sum
         return [self.neurons[n_id] for n_id in reverse_sorted_order[:output_length]]
+# ------------------------------------------------------------------------------
+# Neural Network 2
+# ------------------------------------------------------------------------------
+
+
+class Network2:
+    def __init__(self):
+        # Neurons: id -> output
+        self.neurons = {}
+        # Biases
+        self.biases = {}
+        # Bias gradients
+        self.bias_gradients = {}
+        # Forward connections: id -> {id -> weight}
+        self.forward_connections = {}
+        # Backward connections: id -> {id -> delta_weight_sum}
+        self.backward_connections = {}
+        # Sorted neurons
+        self.sorted_order = []
+        # Architecture
+        self.layers = {}

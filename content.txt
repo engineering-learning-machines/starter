@@ -1,0 +1,34 @@
+=== Neural Networks ===
+
+- Basic match
+  * Taylor
+  * Linear algebra
+  * Derivatives
+  * Integration
+  * Probability
+
+- Numpy
+- Matplotlib
+
+- Numerical aspects
+  * Numerical stability
+  * Monte Carlo
+  * GPU
+- Basic machine learning concepts
+- Computational graphs
+- Calculating Derivatives / Gradients
+- Perceptron Model
+- Sigmoidal Model
+- Sorting through graphs
+- Implementing an MPL from first principles
+- Evaluating Performance
+
+- Optimizing the MPL
+
+- Creating an efficient computational graph
+
+- Going functional / reactive?
+
+- Tests
+
+- Convolutional Neural Network Aspects

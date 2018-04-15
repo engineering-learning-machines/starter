@@ -4,6 +4,7 @@ import time
 import logging
 import pickle
 from network import Network
+import numpy as np
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
@@ -49,90 +50,91 @@ def encode_one_hot(x, dim=10):
 
 if __name__ == '__main__':
     # Start
-    log.debug('Constructing network...')
+
     # This is our main object
-    net = Network()
-    # Construct the neural network
-    net.add_input_layer(INPUT_NEURONS)
-    net.add_hidden_layer(HIDDEN_NEURONS)
-    net.add_output_layer(OUTPUT_NEURONS)
-
-    # Load the data set
-    log.info('Loading data...')
-    start = time.time()
-    with open(DATA_FILE, 'rb') as fp:
-        data = pickle.load(fp, encoding='latin1')
-        training_images = NORMALIZATION_FACTOR * data[0][0]
-        training_labels = data[0][1]
-        test_images = NORMALIZATION_FACTOR * data[1][0]
-        test_labels = data[1][1]
-    log.info('Training data set: {} images'.format(training_labels.shape[0]))
-    log.info('Test data set: {} images'.format(test_labels.shape[0]))
-    log.info('Loaded in {:.1f} seconds'.format(time.time() - start))
-
-    # Convert the data into the proper format to speed up calculations
-    start = time.time()
-    log.info('Converting data...')
-    # Convert the images to image vectors
-    image_vector_length = training_images.shape[1] * training_images.shape[2]
-    training_images.shape = (training_images.shape[0], image_vector_length)
-    test_images.shape = (test_images.shape[0], image_vector_length)
-    # One-hot encode the labels
-    training_labels = [encode_one_hot(label) for label in training_labels]
-    test_labels = [encode_one_hot(label) for label in test_labels]
-    log.info('Done in {:.1f} s'.format(time.time() - start))
-
-    # Create an index for the training data
-    training_index = list(range(training_images.shape[0]))
-    # Create an index for the testing data
-    test_index = list(range(test_images.shape[0]))
-
+#    net = Network()
+#    # Construct the neural network
+#    net.add_input_layer(INPUT_NEURONS)
+#    net.add_hidden_layer(HIDDEN_NEURONS)
+#    net.add_output_layer(OUTPUT_NEURONS)
+#
+#    # Load the data set
+#    log.info('Loading data...')
+#    start = time.time()
+#    with open(DATA_FILE, 'rb') as fp:
+#        data = pickle.load(fp, encoding='latin1')
+#        training_images = NORMALIZATION_FACTOR * data[0][0]
+#        training_labels = data[0][1]
+#        test_images = NORMALIZATION_FACTOR * data[1][0]
+#        test_labels = data[1][1]
+#    log.info('Training data set: {} images'.format(training_labels.shape[0]))
+#    log.info('Test data set: {} images'.format(test_labels.shape[0]))
+#    log.info('Loaded in {:.1f} seconds'.format(time.time() - start))
+#
+#    # Convert the data into the proper format to speed up calculations
+#    start = time.time()
+#    log.info('Converting data...')
+#    # Convert the images to image vectors
+#    image_vector_length = training_images.shape[1] * training_images.shape[2]
+#    training_images.shape = (training_images.shape[0], image_vector_length)
+#    test_images.shape = (test_images.shape[0], image_vector_length)
+#    # One-hot encode the labels
+#    training_labels = [encode_one_hot(label) for label in training_labels]
+#    test_labels = [encode_one_hot(label) for label in test_labels]
+#    log.info('Done in {:.1f} s'.format(time.time() - start))
+#
+#    # Create an index for the training data
+#    training_index = list(range(training_images.shape[0]))
+#    # Create an index for the testing data
+#    test_index = list(range(test_images.shape[0]))
+#
     for epoch_index in range(EPOCH_COUNT):
-        # Randomize the training data
-        shuffle(training_index)
-        # Train the system
-        start_total_training_time = time.time()
-        for batch_index, batch_partition in enumerate(range(training_images.shape[0])[::BATCH_SIZE]):
-            if batch_index >= MAX_BATCH_COUNT:
-                break
-            # Process one batch
-            start_batch = time.time()
-            batch_item_indices = training_index[batch_partition:batch_partition+BATCH_SIZE]
-            # batch_data = training_images[batch_partition:batch_partition+BATCH_SIZE]
-            # batch_labels = training_labels[batch_partition:batch_partition+BATCH_SIZE]
-            # for image, label in zip(batch_data, batch_labels):
-            for j in batch_item_indices:
-                # output = net.evaluate(image)
-                # net.backpropagate(label)
-                output = net.evaluate(training_images[j])
-                net.backpropagate(training_labels[j])
+#        # Randomize the training data
+#        shuffle(training_index)
+#        # Train the system
+#        start_total_training_time = time.time()
+#        for batch_index, batch_partition in enumerate(range(training_images.shape[0])[::BATCH_SIZE]):
+#            if batch_index >= MAX_BATCH_COUNT:
+#                break
+#            # Process one batch
+#            start_batch = time.time()
+#            batch_item_indices = training_index[batch_partition:batch_partition+BATCH_SIZE]
+#            # batch_data = training_images[batch_partition:batch_partition+BATCH_SIZE]
+#            # batch_labels = training_labels[batch_partition:batch_partition+BATCH_SIZE]
+#            # for image, label in zip(batch_data, batch_labels):
+#            for j in batch_item_indices:
+#                # output = net.evaluate(image)
+#                # net.backpropagate(label)
+#                output = net.evaluate(training_images[j])
+#                net.backpropagate(training_labels[j])
+#
+#            # Update weights when finished with batch
+#            # net.update_weights(batch_data.shape[0], LEARN_RATE)
+#            net.update_weights(len(batch_item_indices), LEARN_RATE)
+#            # net.update_biases(batch_data.shape[0], LEARN_RATE)
+#            net.update_biases(len(batch_item_indices), LEARN_RATE)
+#            log.debug('Processed batch: {:0>6} [{:.1f}] s'.format(batch_index+1, time.time() - start_batch))
+#
+#            # Test every BATCH_TEST_INTERVAL batches:
+#            # (might compare overfitting vs unseen test data)
+#            if (batch_index + 1) % BATCH_TEST_INTERVAL == 0:
+#                total_loss = 0
+#                shuffle(test_index)
+#                for index in test_index[:BATCH_SIZE]:
+#                    image = test_images[index]
+#                    label = test_labels[index]
+#                    net.evaluate(image)
+#                    total_loss += net.get_output_squared_error(label)
+#                total_loss = total_loss / BATCH_SIZE
+#                log.info('Test Loss: {:.6f}'.format(total_loss))
+#
+#            # Save model at this checkpoint
+#            with open('model.pkl', 'wb') as fp:
+#                pickle.dump(net, fp)
+#
+#        log.info('Total training time: {:.1f} seconds'.format(time.time() - start_total_training_time))
+#
+#        # Save model when training is done
+#        with open('model.pkl', 'wb') as fp:
+#            pickle.dump(net, fp)
 
-            # Update weights when finished with batch
-            # net.update_weights(batch_data.shape[0], LEARN_RATE)
-            net.update_weights(len(batch_item_indices), LEARN_RATE)
-            # net.update_biases(batch_data.shape[0], LEARN_RATE)
-            net.update_biases(len(batch_item_indices), LEARN_RATE)
-            log.debug('Processed batch: {:0>6} [{:.1f}] s'.format(batch_index+1, time.time() - start_batch))
-
-            # Test every BATCH_TEST_INTERVAL batches:
-            # (might compare overfitting vs unseen test data)
-            if (batch_index + 1) % BATCH_TEST_INTERVAL == 0:
-                total_loss = 0
-                shuffle(test_index)
-                for index in test_index[:BATCH_SIZE]:
-                    image = test_images[index]
-                    label = test_labels[index]
-                    net.evaluate(image)
-                    total_loss += net.get_output_squared_error(label)
-                total_loss = total_loss / BATCH_SIZE
-                log.info('Test Loss: {:.6f}'.format(total_loss))
-
-            # Save model at this checkpoint
-            with open('model.pkl', 'wb') as fp:
-                pickle.dump(net, fp)
-
-        log.info('Total training time: {:.1f} seconds'.format(time.time() - start_total_training_time))
-
-        # Save model when training is done
-        with open('model.pkl', 'wb') as fp:
-            pickle.dump(net, fp)
